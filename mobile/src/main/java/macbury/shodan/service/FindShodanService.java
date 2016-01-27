@@ -8,6 +8,8 @@ import android.net.nsd.NsdServiceInfo;
 import android.os.IBinder;
 import android.util.Log;
 
+import macbury.shodan.Shodan;
+
 /**
  * This service uses zero conf to find service
  */
@@ -17,6 +19,7 @@ public class FindShodanService extends Service implements NsdManager.DiscoveryLi
   private final static String SERVICE_NAME = "Shodan";
   public int port; //TODO save it into application instance!!!!
   public String host;
+  private Shodan shodan;
 
   public FindShodanService() {
   }
@@ -30,6 +33,9 @@ public class FindShodanService extends Service implements NsdManager.DiscoveryLi
   @Override
   public void onCreate() {
     super.onCreate();
+
+    this.shodan = ((Shodan)getApplication());
+    shodan.restInformationAboutShodanServer();
     Log.d(TAG, "Created");
     this.mNsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
     mNsdManager.discoverServices("_http._tcp", NsdManager.PROTOCOL_DNS_SD, this);
@@ -80,10 +86,8 @@ public class FindShodanService extends Service implements NsdManager.DiscoveryLi
         @Override
         public void onServiceResolved(NsdServiceInfo serviceInfo) {
           Log.d(TAG, "Found service host and port: " + serviceInfo);
-          FindShodanService.this.host = serviceInfo.getHost().getHostAddress();
-          FindShodanService.this.port = serviceInfo.getPort();
-          Log.d(TAG, "Host: " + FindShodanService.this.host);
-          Log.d(TAG, "Port: " + FindShodanService.this.port);
+
+          shodan.setShodanServerHostAndPort(serviceInfo.getHost().getHostAddress(), serviceInfo.getPort());
           stopSelf();
         }
       });
