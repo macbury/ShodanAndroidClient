@@ -10,12 +10,12 @@ public class Measurement {
   private float humidity;
   private int id;
 
-  public float getTemperature() {
-    return temperature;
+  public int getTemperature() {
+    return Math.round(temperature);
   }
 
-  public float getHumidity() {
-    return humidity;
+  public int getHumidity() {
+    return Math.round(humidity);
   }
 
   public int getId() {

@@ -29,6 +29,8 @@ dependencies {
     compile 'com.github.blackfizz:eazegraph:1.2.5l@aar'
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'com.squareup:otto:+'
+    compile 'com.github.lzyzsd:circleprogress:1.1.0@aar'
     compile 'com.squareup.retrofit2:retrofit:2.0.0-beta3'
     compile 'com.squareup.retrofit2:converter-gson:2.0.0-beta3'
+    compile 'com.diogobernardino:williamchart:2.2'
 }
