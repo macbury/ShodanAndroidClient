@@ -8,8 +8,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import macbury.shodan.api.StatsService;
+import macbury.shodan.models.Humidifier;
 import macbury.shodan.models.Measurement;
+import macbury.shodan.models.RefillResult;
+import macbury.shodan.models.ShodanStats;
 import okhttp3.HttpUrl;
 import retrofit2.Callback;
 import retrofit2.GsonConverterFactory;
@@ -29,10 +35,34 @@ public class DataSync {
   private NsdServiceInfo serviceToResolve;
   private NsdServiceInfo currentServiceInfo;
   private StatsService api;
-  private Measurement measurment;
   private NsdManager.DiscoveryListener discoveryListener;
+  private ShodanStats stats;
+
 
   public enum State implements BasicState<DataSync> {
+    Refill {
+      @Override
+      public void enter(DataSync dataSync) {
+        final DataSync context = dataSync;
+        context.api.refill(context.stats.getHumidifier().getId()).enqueue(new Callback<RefillResult>() {
+          @Override
+          public void onResponse(Response<RefillResult> response) {
+            context.changeState(SyncData);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            Log.e(TAG, "Error on refill", t);
+            context.changeState(SyncError);
+          }
+        });
+      }
+
+      @Override
+      public void exit(DataSync context) {
+
+      }
+    },
     Stopped {
       @Override
       public void enter(DataSync context) {
@@ -155,10 +185,10 @@ public class DataSync {
     SyncData {
       @Override
       public void enter(final DataSync context) {
-        context.api.current().enqueue(new Callback<Measurement>() {
+        context.api.all().enqueue(new Callback<ShodanStats>() {
           @Override
-          public void onResponse(Response<Measurement> response) {
-            context.measurment = response.body();
+          public void onResponse(Response<ShodanStats> response) {
+            context.stats = response.body();
             context.changeState(Ready);
           }
 
@@ -230,7 +260,7 @@ public class DataSync {
   }
 
   public Measurement getMeasurment() {
-    return measurment;
+    return stats.getCurrent();
   }
 
   public void stop() {
@@ -251,10 +281,14 @@ public class DataSync {
       return;
     }
 
+    Gson gson = new GsonBuilder()
+        .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        .create();
+
     Log.i(TAG, "Shodan url: " + httpUrl.toString());
     Retrofit retrofit = new Retrofit.Builder()
         .baseUrl(httpUrl)
-        .addConverterFactory(GsonConverterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .build();
 
     this.api = retrofit.create(StatsService.class);
@@ -262,4 +296,28 @@ public class DataSync {
     changeState(State.SyncData);
   }
 
+
+  public State getCurrentState() {
+    return currentState;
+  }
+
+  public void refresh() {
+    if (currentState == DataSync.State.Ready) {
+      changeState(State.SyncData);
+    } else {
+      changeState(State.SearchingService);
+    }
+  }
+
+  public Humidifier getHumidifier() {
+    return this.stats.getHumidifier();
+  }
+
+  public void refill() {
+    if (currentState == DataSync.State.Ready) {
+      changeState(State.Refill);
+    } else {
+      changeState(State.SearchingService);
+    }
+  }
 }
