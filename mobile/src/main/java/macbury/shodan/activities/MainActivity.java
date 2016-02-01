@@ -1,5 +1,6 @@
 package macbury.shodan.activities;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.net.nsd.NsdManager;
@@ -21,6 +22,7 @@ import lecho.lib.hellocharts.view.LineChartView;
 import macbury.shodan.R;
 import macbury.shodan.models.Humidifier;
 import macbury.shodan.models.Measurement;
+import macbury.shodan.services.PingShodanService;
 import macbury.shodan.sync.DataSync;
 
 public class MainActivity extends AppCompatActivity implements DataSync.Listener, View.OnClickListener {
@@ -79,6 +81,9 @@ public class MainActivity extends AppCompatActivity implements DataSync.Listener
   protected void onResume() {
     super.onResume();
     this.dataSync = new DataSync(this.getBaseContext(), this);
+
+    NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    mNotificationManager.cancel(PingShodanService.OUT_OF_WATER_NOTIFICATION_ID);
 
   }
 

@@ -13,6 +13,7 @@ import com.google.gson.GsonBuilder;
 
 import macbury.shodan.api.StatsService;
 import macbury.shodan.models.Humidifier;
+import macbury.shodan.models.HumidifierState;
 import macbury.shodan.models.Measurement;
 import macbury.shodan.models.RefillResult;
 import macbury.shodan.models.ShodanStats;
@@ -37,9 +38,52 @@ public class DataSync {
   private StatsService api;
   private NsdManager.DiscoveryListener discoveryListener;
   private ShodanStats stats;
+  private String deviceUid;
+  private HumidifierState humidifierStatus;
+
+  public HumidifierState getHumidifierStatus() {
+    return humidifierStatus;
+  }
 
 
   public enum State implements BasicState<DataSync> {
+    PingSuccess {
+      @Override
+      public void enter(DataSync context) {
+
+      }
+
+      @Override
+      public void exit(DataSync context) {
+
+      }
+    },
+
+    Ping {
+      @Override
+      public void enter(DataSync context) {
+        final DataSync dataSync = context;
+        dataSync.api.ping(dataSync.deviceUid).enqueue(new Callback<HumidifierState>() {
+          @Override
+          public void onResponse(Response<HumidifierState> response) {
+            dataSync.humidifierStatus = response.body();
+            dataSync.changeState(PingSuccess);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            Log.e(TAG, "Error on ping!", t);
+            dataSync.changeState(SyncError);
+          }
+        });
+      }
+
+      @Override
+      public void exit(DataSync context) {
+
+      }
+    },
+
     Refill {
       @Override
       public void enter(DataSync dataSync) {
@@ -319,5 +363,14 @@ public class DataSync {
     } else {
       changeState(State.SearchingService);
     }
+  }
+
+  /**
+   * Sends ping with device uid.
+   * @param deviceUid
+   */
+  public void ping(String deviceUid) {
+    this.deviceUid = deviceUid;
+    changeState(State.Ping);
   }
 }

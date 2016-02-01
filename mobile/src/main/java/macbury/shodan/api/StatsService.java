@@ -2,6 +2,7 @@ package macbury.shodan.api;
 
 import java.lang.ref.Reference;
 
+import macbury.shodan.models.HumidifierState;
 import macbury.shodan.models.Measurement;
 import macbury.shodan.models.RefillResult;
 import macbury.shodan.models.ShodanStats;
@@ -19,4 +20,7 @@ public interface StatsService {
   Call<ShodanStats> all();
   @GET("/humidifier/{id}/refill")
   Call<RefillResult> refill(@Path("id") int humidifierId);
+
+  @GET("/ping/{uid}")
+  Call<HumidifierState> ping(@Path("uid") String deviceUid);
 }
